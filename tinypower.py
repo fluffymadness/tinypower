@@ -135,9 +135,9 @@ class AcpiEventChecker(QtCore.QThread):
 		os.system(LIDOPEN)
 
 	def lid_close(self):
-		os.system(BUTTONSLEEP)
-	def button_sleep(self):
 		os.system(LIDCLOSED)
+	def button_sleep(self):
+		os.system(BUTTONSLEEP)
 		
 	def brightness(self):
 		f=open('/sys/class/backlight/acpi_video0/max_brightness')
