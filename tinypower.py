@@ -7,13 +7,13 @@
 #
 import subprocess
 import time
-import threading
 import sys
 import socket
 import os
 import pynotify
 import settings
 from PyQt4 import QtGui, QtCore
+from PyQt4.QtCore import QSettings, QString
 
 ACPI_CMD = 'acpi'
 BATTERYNAME = 'BAT0'
@@ -25,23 +25,55 @@ ICONPATH = '/usr/share/pixmaps/tinypower/'
 
 app = QtGui.QApplication(sys.argv)
 
-class SettingsExtended(settings.Ui_Dialog):
-    dialog = QtGui.QDialog()
+
+class AppSettings():
+
     def __init__(self):
-        super(SettingsExtended, self).setupUi(self.dialog)
+        self.settings = QSettings('tinypower', 'tinypower')
+
+    def readSetting(self, settingsname):
+        return self.settings.value(settingsname)
+
+
+    def writeSetting(self, settingname, settingvalue):
+        self.settings.setValue(settingname, settingvalue)
+
+
+class SettingsExtended(settings.Ui_Dialog, QtGui.QDialog):
+    def __init__(self, appsettings):
+        self.appsettings = appsettings
+        super(SettingsExtended, self).__init__()
+        super(SettingsExtended, self).setupUi(self)
+
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.saveSettings)
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.cancel)
 
+        self.ldCommand.setText(self.appsettings.readSetting('ldCommand').toString())
+        self.pbCommand.setText(self.appsettings.readSetting('pbCommand').toString())
+        self.spCommand.setText(self.appsettings.readSetting('spCommand').toString())
+
     def showDialog(self):
-        self.dialog.show()
+        self.show()
+        self.ldCommand.setText(self.appsettings.readSetting('ldCommand').toString())
+        self.pbCommand.setText(self.appsettings.readSetting('pbCommand').toString())
+        self.spCommand.setText(self.appsettings.readSetting('spCommand').toString())
 
     def saveSettings(self):
-        self.dialog.hide()
+        self.hide()
+        self.appsettings.writeSetting('ldCommand', self.ldCommand.text())
+        self.appsettings.writeSetting('pbCommand', self.pbCommand.text())
+        self.appsettings.writeSetting('spCommand', self.spCommand.text())
+
     def cancel(self):
-        self.dialog.hide()
+        self.hide()
+
+    def closeEvent(self, evnt):
+        evnt.ignore()
+        self.hide()
+
 
 class SystemTrayIcon(QtGui.QSystemTrayIcon):
-    settingsVar = SettingsExtended()
+
     def __init__(self, parent=None):
         self.batterychecker = BatteryChecker()
         self.connect(self.batterychecker, QtCore.SIGNAL("setIcon"), self.set_icon)
@@ -58,6 +90,9 @@ class SystemTrayIcon(QtGui.QSystemTrayIcon):
         exitAction.triggered.connect(self.on_exit)
         configAction = self.menu.addAction("Config")
         configAction.triggered.connect(self.on_config)
+
+        self.appSettings = AppSettings()
+        self.settingsVar = SettingsExtended(self.appSettings)
 
         self.setContextMenu(self.menu)
 
