@@ -13,13 +13,10 @@ import os
 import pynotify
 import settings
 from PyQt4 import QtGui, QtCore
-from PyQt4.QtCore import QSettings, QString
+from PyQt4.QtCore import QSettings
 
 ACPI_CMD = 'acpi'
 BATTERYNAME = 'BAT0'
-POWERBUTTON = 'oblogout'
-BUTTONSLEEP = 'systemctl suspend; slimlock'	
-LIDCLOSED = 'systemctl suspend; slimlock'
 LIDOPEN = ''
 ICONPATH = '/usr/share/pixmaps/tinypower/'
 
@@ -32,7 +29,7 @@ class AppSettings():
         self.settings = QSettings('tinypower', 'tinypower')
 
     def readSetting(self, settingsname):
-        return self.settings.value(settingsname)
+        return self.settings.value(settingsname).toString()
 
 
     def writeSetting(self, settingname, settingvalue):
@@ -48,15 +45,15 @@ class SettingsExtended(settings.Ui_Dialog, QtGui.QDialog):
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.saveSettings)
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.cancel)
 
-        self.ldCommand.setText(self.appsettings.readSetting('ldCommand').toString())
-        self.pbCommand.setText(self.appsettings.readSetting('pbCommand').toString())
-        self.spCommand.setText(self.appsettings.readSetting('spCommand').toString())
+        self.ldCommand.setText(self.appsettings.readSetting('ldCommand'))
+        self.pbCommand.setText(self.appsettings.readSetting('pbCommand'))
+        self.spCommand.setText(self.appsettings.readSetting('spCommand'))
 
     def showDialog(self):
         self.show()
-        self.ldCommand.setText(self.appsettings.readSetting('ldCommand').toString())
-        self.pbCommand.setText(self.appsettings.readSetting('pbCommand').toString())
-        self.spCommand.setText(self.appsettings.readSetting('spCommand').toString())
+        self.ldCommand.setText(self.appsettings.readSetting('ldCommand'))
+        self.pbCommand.setText(self.appsettings.readSetting('pbCommand'))
+        self.spCommand.setText(self.appsettings.readSetting('spCommand'))
 
     def saveSettings(self):
         self.hide()
@@ -75,24 +72,24 @@ class SettingsExtended(settings.Ui_Dialog, QtGui.QDialog):
 class SystemTrayIcon(QtGui.QSystemTrayIcon):
 
     def __init__(self, parent=None):
+        self.appSettings = AppSettings()
+        self.settingsVar = SettingsExtended(self.appSettings)
+
         self.batterychecker = BatteryChecker()
         self.connect(self.batterychecker, QtCore.SIGNAL("setIcon"), self.set_icon)
         self.batterychecker.start()
 
-        self.acpichecker = AcpiEventChecker()
+        self.acpichecker = AcpiEventChecker(self.appSettings)
         self.acpichecker.start()
 
         QtGui.QSystemTrayIcon.__init__(self, parent)
         self.set_icon('battery_full.png', '')
         self.menu = QtGui.QMenu(parent)
 
-        exitAction = self.menu.addAction("Exit")
-        exitAction.triggered.connect(self.on_exit)
         configAction = self.menu.addAction("Config")
         configAction.triggered.connect(self.on_config)
-
-        self.appSettings = AppSettings()
-        self.settingsVar = SettingsExtended(self.appSettings)
+        exitAction = self.menu.addAction("Exit")
+        exitAction.triggered.connect(self.on_exit)
 
         self.setContextMenu(self.menu)
 
@@ -162,16 +159,32 @@ class BatteryChecker(QtCore.QThread):
 class AcpiEventChecker(QtCore.QThread):
     running = 1
     pynotify.init("Hello world")
-    notification = pynotify.Notification ("empty", "empty", "dialog-information")
+    notification = pynotify.Notification("empty", "empty", "dialog-information")
 
-    def __init__(self):
+    def __init__(self, appsettings):
         QtCore.QThread.__init__(self, parent=app)
+        self.appsettings = appsettings
+
+    def checkIfRunning(self, processname):
+        p = subprocess.Popen(["pidof", "-x", processname], stdout=subprocess.PIPE)
+        out, err = p.communicate()
+        if len(out) > 0:
+            print "running"
+            return True
+        else:
+            print "notrunning"
+            return False
+
 
     def stop(self):
         self.running = 0
 
     def power_button(self):
-        os.system(POWERBUTTON)
+        process = str(self.appsettings.readSetting('pbCommand'))
+        if not self.checkIfRunning(process):
+            os.system(process)
+            #subprocess.Popen([process])
+
 
     def battery_charge(self):
         time.sleep(2)
@@ -187,16 +200,22 @@ class AcpiEventChecker(QtCore.QThread):
 
     def unplugged(self):
         #notification=pynotify.Notification ("Unplugged","Battery remaining:","dialog-information")
-        self.notification.update("Unplugged","Battery Status:"+str(self.battery_charge())+"%","battery-full")
+        self.notification.update("Unplugged", "Battery Status:"+str(self.battery_charge())+"%", "battery-full")
         self.notification.show()
 
     def lid_open(self):
-        os.system(LIDOPEN)
+        #os.system(LIDOPEN)
+        print "not implemented yet"
 
     def lid_close(self):
-        os.system(LIDCLOSED)
+        process = str(self.appsettings.readSetting('ldCommand'))
+        if not self.checkIfRunning(process):
+            os.system(process)
+
     def button_sleep(self):
-        os.system(BUTTONSLEEP)
+        process = str(self.appsettings.readSetting('spCommand'))
+        if not self.checkIfRunning(process):
+            os.system(process)
 
     def brightness(self):
         f=open('/sys/class/backlight/acpi_video0/max_brightness')
