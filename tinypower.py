@@ -176,10 +176,8 @@ class AcpiEventChecker(QtCore.QThread):
         p = subprocess.Popen(["pidof", "-x", processname], stdout=subprocess.PIPE)
         out, err = p.communicate()
         if len(out) > 0:
-            print "running"
             return True
         else:
-            print "notrunning"
             return False
 
     # powerbutton, suspend key, lidclose
