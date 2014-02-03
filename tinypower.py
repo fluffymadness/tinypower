@@ -31,6 +31,11 @@ class AppSettings():
     def readSetting(self, settingsname):
         return self.settings.value(settingsname).toString()
 
+    def readSettingInt(self, settingsname):
+        if not self.settings.value(settingsname).toString():
+           return 0
+        else:
+           return int(self.settings.value(settingsname).toString())
 
     def writeSetting(self, settingname, settingvalue):
         self.settings.setValue(settingname, settingvalue)
@@ -45,21 +50,23 @@ class SettingsExtended(settings.Ui_Dialog, QtGui.QDialog):
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.saveSettings)
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.cancel)
 
-        self.ldCommand.setText(self.appsettings.readSetting('ldCommand'))
-        self.pbCommand.setText(self.appsettings.readSetting('pbCommand'))
-        self.spCommand.setText(self.appsettings.readSetting('spCommand'))
-
     def showDialog(self):
         self.show()
         self.ldCommand.setText(self.appsettings.readSetting('ldCommand'))
         self.pbCommand.setText(self.appsettings.readSetting('pbCommand'))
         self.spCommand.setText(self.appsettings.readSetting('spCommand'))
+        self.pButtonBox.setCurrentIndex(self.appsettings.readSettingInt('pButtonBox'))
+        self.spButtonBox.setCurrentIndex(self.appsettings.readSettingInt('spButtonBox'))
+        self.ldClBox.setCurrentIndex(self.appsettings.readSettingInt('ldClBox'))
 
     def saveSettings(self):
         self.hide()
         self.appsettings.writeSetting('ldCommand', self.ldCommand.text())
         self.appsettings.writeSetting('pbCommand', self.pbCommand.text())
         self.appsettings.writeSetting('spCommand', self.spCommand.text())
+        self.appsettings.writeSetting('pButtonBox', self.pButtonBox.currentIndex())
+        self.appsettings.writeSetting('spButtonBox', self.spButtonBox.currentIndex())
+        self.appsettings.writeSetting('ldClBox', self.ldClBox.currentIndex())
 
     def cancel(self):
         self.hide()
@@ -175,6 +182,17 @@ class AcpiEventChecker(QtCore.QThread):
             print "notrunning"
             return False
 
+    # powerbutton, suspend key, lidclose
+    # states: hibernate, nothing, poweroff, suspend
+    def buttonCommand(self, buttonname):
+        state = self.appsettings.readSettingInt(buttonname)
+        print state
+        if state == 0:
+            os.system('systemctl hibernate')
+        elif state == 2:
+            os.system('systemctl poweroff')
+        elif state == 3:
+            os.system('systemctl suspend')
 
     def stop(self):
         self.running = 0
@@ -182,8 +200,23 @@ class AcpiEventChecker(QtCore.QThread):
     def power_button(self):
         process = str(self.appsettings.readSetting('pbCommand'))
         if not self.checkIfRunning(process):
+            self.buttonCommand('pButtonBox')
             os.system(process)
-            #subprocess.Popen([process])
+
+    def lid_open(self):
+        print "not implemented yet"
+
+    def lid_close(self):
+        process = str(self.appsettings.readSetting('ldCommand'))
+        if not self.checkIfRunning(process):
+            self.buttonCommand('ldClBox')
+            os.system(process)
+
+    def button_sleep(self):
+        process = str(self.appsettings.readSetting('spCommand'))
+        if not self.checkIfRunning(process):
+            self.buttonCommand('spButtonBox')
+            os.system(process)
 
 
     def battery_charge(self):
@@ -202,20 +235,6 @@ class AcpiEventChecker(QtCore.QThread):
         #notification=pynotify.Notification ("Unplugged","Battery remaining:","dialog-information")
         self.notification.update("Unplugged", "Battery Status:"+str(self.battery_charge())+"%", "battery-full")
         self.notification.show()
-
-    def lid_open(self):
-        #os.system(LIDOPEN)
-        print "not implemented yet"
-
-    def lid_close(self):
-        process = str(self.appsettings.readSetting('ldCommand'))
-        if not self.checkIfRunning(process):
-            os.system(process)
-
-    def button_sleep(self):
-        process = str(self.appsettings.readSetting('spCommand'))
-        if not self.checkIfRunning(process):
-            os.system(process)
 
     def brightness(self):
         f=open('/sys/class/backlight/acpi_video0/max_brightness')
