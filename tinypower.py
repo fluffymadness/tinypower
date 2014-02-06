@@ -42,34 +42,9 @@ class AppSettings():
 
 
 class SettingsExtended(settings.Ui_Dialog, QtGui.QDialog):
-    def __init__(self, appsettings):
-        self.appsettings = appsettings
+    def __init__(self):
         super(SettingsExtended, self).__init__()
         super(SettingsExtended, self).setupUi(self)
-
-        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), self.saveSettings)
-        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), self.cancel)
-
-    def showDialog(self):
-        self.show()
-        self.ldCommand.setText(self.appsettings.readSetting('ldCommand'))
-        self.pbCommand.setText(self.appsettings.readSetting('pbCommand'))
-        self.spCommand.setText(self.appsettings.readSetting('spCommand'))
-        self.pButtonBox.setCurrentIndex(self.appsettings.readSettingInt('pButtonBox'))
-        self.spButtonBox.setCurrentIndex(self.appsettings.readSettingInt('spButtonBox'))
-        self.ldClBox.setCurrentIndex(self.appsettings.readSettingInt('ldClBox'))
-
-    def saveSettings(self):
-        self.hide()
-        self.appsettings.writeSetting('ldCommand', self.ldCommand.text())
-        self.appsettings.writeSetting('pbCommand', self.pbCommand.text())
-        self.appsettings.writeSetting('spCommand', self.spCommand.text())
-        self.appsettings.writeSetting('pButtonBox', self.pButtonBox.currentIndex())
-        self.appsettings.writeSetting('spButtonBox', self.spButtonBox.currentIndex())
-        self.appsettings.writeSetting('ldClBox', self.ldClBox.currentIndex())
-
-    def cancel(self):
-        self.hide()
 
     def closeEvent(self, evnt):
         evnt.ignore()
@@ -80,13 +55,16 @@ class SystemTrayIcon(QtGui.QSystemTrayIcon):
 
     def __init__(self, parent=None):
         self.appSettings = AppSettings()
-        self.settingsVar = SettingsExtended(self.appSettings)
-
+        self.settingsVar = SettingsExtended()
         self.batterychecker = BatteryChecker()
-        self.connect(self.batterychecker, QtCore.SIGNAL("setIcon"), self.set_icon)
-        self.batterychecker.start()
-
         self.acpichecker = AcpiEventChecker(self.appSettings)
+
+        self.connect(self.batterychecker, QtCore.SIGNAL("setIcon"), self.set_icon)
+
+        self.connect(self.settingsVar.buttonBox, QtCore.SIGNAL("accepted()"), self.saveSettings)
+        self.connect(self.settingsVar.buttonBox, QtCore.SIGNAL("rejected()"), self.cancel)
+
+        self.batterychecker.start()
         self.acpichecker.start()
 
         QtGui.QSystemTrayIcon.__init__(self, parent)
@@ -97,8 +75,40 @@ class SystemTrayIcon(QtGui.QSystemTrayIcon):
         configAction.triggered.connect(self.on_config)
         exitAction = self.menu.addAction("Exit")
         exitAction.triggered.connect(self.on_exit)
-
         self.setContextMenu(self.menu)
+
+        self.dpms_init()
+
+    def readSettings(self):
+        self.settingsVar.ldCommand.setText(self.appSettings.readSetting('ldCommand'))
+        self.settingsVar.pbCommand.setText(self.appSettings.readSetting('pbCommand'))
+        self.settingsVar.spCommand.setText(self.appSettings.readSetting('spCommand'))
+        self.settingsVar.pButtonBox.setCurrentIndex(self.appSettings.readSettingInt('pButtonBox'))
+        self.settingsVar.spButtonBox.setCurrentIndex(self.appSettings.readSettingInt('spButtonBox'))
+        self.settingsVar.ldClBox.setCurrentIndex(self.appSettings.readSettingInt('ldClBox'))
+        self.settingsVar.screenOffBattery.setText(self.appSettings.readSetting('screenOffBattery'))
+        self.settingsVar.screenOffPlugged.setText(self.appSettings.readSetting('screenOffPlugged'))
+
+    def saveSettings(self):
+        self.appSettings.writeSetting('ldCommand', self.settingsVar.ldCommand.text())
+        self.appSettings.writeSetting('pbCommand', self.settingsVar.pbCommand.text())
+        self.appSettings.writeSetting('spCommand', self.settingsVar.spCommand.text())
+        self.appSettings.writeSetting('pButtonBox', self.settingsVar.pButtonBox.currentIndex())
+        self.appSettings.writeSetting('spButtonBox', self.settingsVar.spButtonBox.currentIndex())
+        self.appSettings.writeSetting('ldClBox', self.settingsVar.ldClBox.currentIndex())
+        self.appSettings.writeSetting('screenOffBattery', self.settingsVar.screenOffBattery.text())
+        self.appSettings.writeSetting('screenOffPlugged', self.settingsVar.screenOffPlugged.text())
+        self.dpms_init()
+        self.settingsVar.hide()
+
+    def cancel(self):
+        self.settingsVar.hide()
+
+    def dpms_init(self):
+        if self.batterychecker.checkIfPlugged():
+            self.acpichecker.setDPMSPlugged()
+        else:
+            self.acpichecker.setDPMSBattery()
 
     def on_exit(self, event):
         self.batterychecker.stop()
@@ -106,7 +116,8 @@ class SystemTrayIcon(QtGui.QSystemTrayIcon):
         sys.exit(1)
 
     def on_config(self, event):
-        self.settingsVar.showDialog()
+        self.readSettings()
+        self.settingsVar.show()
 
     def set_icon(self, trayicon, tooltip):
         icon = QtGui.QIcon(ICONPATH + trayicon +'.png')
@@ -129,6 +140,14 @@ class BatteryChecker(QtCore.QThread):
 
     def stop(self):
         self.running = 0
+
+
+    def checkIfPlugged(self):
+        text = subprocess.check_output(["acpi", "-V"]).strip('\n')
+        if not 'off-line' in text:
+            return True
+        else:
+            return False
 
     def get_battery_info(self):
         text = subprocess.check_output(ACPI_CMD).strip('\n')
@@ -180,6 +199,18 @@ class AcpiEventChecker(QtCore.QThread):
         else:
             return False
 
+    def setDPMSPlugged(self):
+        pluggedTime = self.appsettings.readSettingInt('screenOffPlugged')
+        os.system('xset s off')
+        os.system('xset +dpms')
+        os.system('xset dpms'+' '+str(pluggedTime)+' '+str(pluggedTime)+' '+str(pluggedTime))
+
+    def setDPMSBattery(self):
+        batteryOffTime = self.appsettings.readSettingInt('screenOffBattery')
+        os.system('xset s off')
+        os.system('xset +dpms')
+        os.system('xset dpms'+' '+str(batteryOffTime)+' '+str(batteryOffTime)+' '+str(batteryOffTime))
+
     # powerbutton, suspend key, lidclose
     # states: hibernate, nothing, poweroff, suspend
     def buttonCommand(self, buttonname):
@@ -228,11 +259,13 @@ class AcpiEventChecker(QtCore.QThread):
     def plugged(self):
         self.notification.update("Plugged", "Battery Status:"+str(self.battery_charge())+"%", "battery-plugged")
         self.notification.show()
+        self.setDPMSPlugged()
 
     def unplugged(self):
         #notification=pynotify.Notification ("Unplugged","Battery remaining:","dialog-information")
         self.notification.update("Unplugged", "Battery Status:"+str(self.battery_charge())+"%", "battery-full")
         self.notification.show()
+        self.setDPMSBattery()
 
     def brightness(self):
         f=open('/sys/class/backlight/acpi_video0/max_brightness')

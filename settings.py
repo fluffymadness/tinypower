@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'settings.ui'
 #
-# Created: Thu Jan 23 15:13:24 2014
+# Created: Thu Feb  6 16:00:36 2014
 #      by: PyQt4 UI code generator 4.10.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,14 +26,19 @@ except AttributeError:
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName(_fromUtf8("Dialog"))
-        Dialog.resize(394, 207)
+        Dialog.resize(402, 265)
         self.buttonBox = QtGui.QDialogButtonBox(Dialog)
-        self.buttonBox.setGeometry(QtCore.QRect(50, 170, 341, 32))
+        self.buttonBox.setGeometry(QtCore.QRect(60, 230, 341, 32))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName(_fromUtf8("buttonBox"))
-        self.formLayoutWidget = QtGui.QWidget(Dialog)
-        self.formLayoutWidget.setGeometry(QtCore.QRect(10, 10, 381, 151))
+        self.tabWidget = QtGui.QTabWidget(Dialog)
+        self.tabWidget.setGeometry(QtCore.QRect(0, 0, 401, 231))
+        self.tabWidget.setObjectName(_fromUtf8("tabWidget"))
+        self.acpi = QtGui.QWidget()
+        self.acpi.setObjectName(_fromUtf8("acpi"))
+        self.formLayoutWidget = QtGui.QWidget(self.acpi)
+        self.formLayoutWidget.setGeometry(QtCore.QRect(0, 10, 391, 151))
         self.formLayoutWidget.setObjectName(_fromUtf8("formLayoutWidget"))
         self.formLayout = QtGui.QFormLayout(self.formLayoutWidget)
         self.formLayout.setFieldGrowthPolicy(QtGui.QFormLayout.AllNonFixedFieldsGrow)
@@ -42,6 +47,9 @@ class Ui_Dialog(object):
         self.label_2 = QtGui.QLabel(self.formLayoutWidget)
         self.label_2.setObjectName(_fromUtf8("label_2"))
         self.formLayout.setWidget(0, QtGui.QFormLayout.LabelRole, self.label_2)
+        self.label = QtGui.QLabel(self.formLayoutWidget)
+        self.label.setObjectName(_fromUtf8("label"))
+        self.formLayout.setWidget(0, QtGui.QFormLayout.FieldRole, self.label)
         self.pButtonBox = QtGui.QComboBox(self.formLayoutWidget)
         self.pButtonBox.setObjectName(_fromUtf8("pButtonBox"))
         self.pButtonBox.addItem(_fromUtf8(""))
@@ -84,18 +92,44 @@ class Ui_Dialog(object):
         self.ldCommand = QtGui.QLineEdit(self.formLayoutWidget)
         self.ldCommand.setObjectName(_fromUtf8("ldCommand"))
         self.formLayout.setWidget(5, QtGui.QFormLayout.FieldRole, self.ldCommand)
-        self.label = QtGui.QLabel(self.formLayoutWidget)
-        self.label.setObjectName(_fromUtf8("label"))
-        self.formLayout.setWidget(0, QtGui.QFormLayout.FieldRole, self.label)
+        self.tabWidget.addTab(self.acpi, _fromUtf8(""))
+        self.dpms = QtGui.QWidget()
+        self.dpms.setObjectName(_fromUtf8("dpms"))
+        self.formLayoutWidget_2 = QtGui.QWidget(self.dpms)
+        self.formLayoutWidget_2.setGeometry(QtCore.QRect(0, 0, 401, 201))
+        self.formLayoutWidget_2.setObjectName(_fromUtf8("formLayoutWidget_2"))
+        self.formLayout_2 = QtGui.QFormLayout(self.formLayoutWidget_2)
+        self.formLayout_2.setMargin(0)
+        self.formLayout_2.setObjectName(_fromUtf8("formLayout_2"))
+        self.label_7 = QtGui.QLabel(self.formLayoutWidget_2)
+        self.label_7.setObjectName(_fromUtf8("label_7"))
+        self.formLayout_2.setWidget(0, QtGui.QFormLayout.LabelRole, self.label_7)
+        self.label_8 = QtGui.QLabel(self.formLayoutWidget_2)
+        self.label_8.setIndent(2)
+        self.label_8.setObjectName(_fromUtf8("label_8"))
+        self.formLayout_2.setWidget(1, QtGui.QFormLayout.LabelRole, self.label_8)
+        self.screenOffBattery = QtGui.QLineEdit(self.formLayoutWidget_2)
+        self.screenOffBattery.setObjectName(_fromUtf8("screenOffBattery"))
+        self.formLayout_2.setWidget(1, QtGui.QFormLayout.FieldRole, self.screenOffBattery)
+        self.label_9 = QtGui.QLabel(self.formLayoutWidget_2)
+        self.label_9.setObjectName(_fromUtf8("label_9"))
+        self.formLayout_2.setWidget(2, QtGui.QFormLayout.LabelRole, self.label_9)
+        self.label_10 = QtGui.QLabel(self.formLayoutWidget_2)
+        self.label_10.setIndent(2)
+        self.label_10.setObjectName(_fromUtf8("label_10"))
+        self.formLayout_2.setWidget(3, QtGui.QFormLayout.LabelRole, self.label_10)
+        self.screenOffPlugged = QtGui.QLineEdit(self.formLayoutWidget_2)
+        self.screenOffPlugged.setObjectName(_fromUtf8("screenOffPlugged"))
+        self.formLayout_2.setWidget(3, QtGui.QFormLayout.FieldRole, self.screenOffPlugged)
+        self.tabWidget.addTab(self.dpms, _fromUtf8(""))
 
         self.retranslateUi(Dialog)
-        #QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL(_fromUtf8("accepted()")), Dialog.accept)
-        #QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL(_fromUtf8("rejected()")), Dialog.reject)
-        QtCore.QMetaObject.connectSlotsByName(Dialog)
+        self.tabWidget.setCurrentIndex(1)
 
     def retranslateUi(self, Dialog):
         Dialog.setWindowTitle(_translate("Dialog", "Settings", None))
         self.label_2.setText(_translate("Dialog", "Power Button:", None))
+        self.label.setText(_translate("Dialog", "Launch Command:", None))
         self.pButtonBox.setItemText(0, _translate("Dialog", "Hibernate", None))
         self.pButtonBox.setItemText(1, _translate("Dialog", "Nothing", None))
         self.pButtonBox.setItemText(2, _translate("Dialog", "Power Off", None))
@@ -112,7 +146,12 @@ class Ui_Dialog(object):
         self.ldClBox.setItemText(1, _translate("Dialog", "Nothing", None))
         self.ldClBox.setItemText(2, _translate("Dialog", "Power off", None))
         self.ldClBox.setItemText(3, _translate("Dialog", "Suspend", None))
-        self.label.setText(_translate("Dialog", "Launch Command:", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.acpi), _translate("Dialog", "Acpi", None))
+        self.label_7.setText(_translate("Dialog", "On Battery :", None))
+        self.label_8.setText(_translate("Dialog", "Screen off Time:", None))
+        self.label_9.setText(_translate("Dialog", "On Power :", None))
+        self.label_10.setText(_translate("Dialog", "Screen off Time:", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.dpms), _translate("Dialog", "DPMS", None))
 
 
 if __name__ == "__main__":
