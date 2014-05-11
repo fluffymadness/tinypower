@@ -9,6 +9,7 @@ import subprocess
 import time
 import sys
 import socket
+import threading
 import os
 import pynotify
 import settings
@@ -215,7 +216,7 @@ class AcpiEventChecker(QtCore.QThread):
     # states: hibernate, nothing, poweroff, suspend
     def buttonCommand(self, buttonname):
         state = self.appsettings.readSettingInt(buttonname)
-        print state
+        #print state
         if state == 0:
             os.system('systemctl hibernate')
         elif state == 2:
@@ -228,24 +229,24 @@ class AcpiEventChecker(QtCore.QThread):
 
     def power_button(self):
         process = str(self.appsettings.readSetting('pbCommand'))
+        self.buttonCommand('pButtonBox')
         if not self.checkIfRunning(process):
-            self.buttonCommand('pButtonBox')
-            os.system(process)
+            subprocess.Popen([process])
 
     def lid_open(self):
         print "not implemented yet"
 
     def lid_close(self):
         process = str(self.appsettings.readSetting('ldCommand'))
+        self.buttonCommand('ldClBox')
         if not self.checkIfRunning(process):
-            self.buttonCommand('ldClBox')
-            os.system(process)
+            subprocess.Popen([process])
 
     def button_sleep(self):
         process = str(self.appsettings.readSetting('spCommand'))
+        self.buttonCommand('spButtonBox')
         if not self.checkIfRunning(process):
-            self.buttonCommand('spButtonBox')
-            os.system(process)
+            subprocess.Popen([process])
 
 
     def battery_charge(self):
@@ -286,29 +287,31 @@ class AcpiEventChecker(QtCore.QThread):
         s.connect("/var/run/acpid.socket")
         print "Connected to acpid"
         while self.running:
-            for event in s.recv(4096).split('\n'):
-                event = event.split(' ')
-                if len(event)<2: continue
-                    #print event
-                if event[0]=='ac_adapter':
-                    if event[3]=='00000001': #plugged
-                        self.plugged() #Power plugged event
-                    else: #unplugged
-                        self.unplugged() #Power unplugged event
-                elif event[0]=='button/power':
-                    self.power_button() #Power button pressed
-                elif event[0]=='button/lid':
-                    if event[2]=='open':
-                        self.lid_open() #Laptop lid opened
-                    elif event[2]=='close':
-                        self.lid_close() #Laptop lid closed
-                elif event[0]=='button/sleep':
-                    self.button_sleep()
-                elif event[0]=='video/brightnessup':
-                    self.brightness()
-                elif event[0]=='video/brightnessdown':
-                    self.brightness()
-
+            try:
+                for event in s.recv(4096).split('\n'):
+                    event = event.split(' ')
+                    if len(event)<2: continue
+                        #print event
+                    if event[0]=='ac_adapter':
+                        if event[3]=='00000001': #plugged
+                            self.plugged() #Power plugged event
+                        else: #unplugged
+                            self.unplugged() #Power unplugged event
+                    elif event[0]=='button/power':
+                        self.power_button() #Power button pressed
+                    elif event[0]=='button/lid':
+                        if event[2]=='open':
+                            self.lid_open() #Laptop lid opened
+                        elif event[2]=='close':
+                            self.lid_close() #Laptop lid closed
+                    elif event[0]=='button/sleep':
+                        self.button_sleep()
+                    elif event[0]=='video/brightnessup':
+                        self.brightness()
+                    elif event[0]=='video/brightnessdown':
+                        self.brightness()
+            except IOError, e:
+                print "ACPI Socket Error"
  
 def main():
     trayIcon = SystemTrayIcon()
