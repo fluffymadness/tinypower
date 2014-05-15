@@ -46,6 +46,9 @@ The following events can have custom actions:
 
 You can assing a systemd action to the different events,
 like PowerOff, Suspend, Hibernate, Nothing
+You can also launch custom applications when the different events
+occour.
+
 
 
 DPMS Handling:
