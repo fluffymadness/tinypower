@@ -165,7 +165,9 @@ class BatteryChecker(QtCore.QThread):
 
     def get_icon_name(self, state, percentage):
         if state == 'Discharging':
-                if percentage < 10:
+                if percentage < 5:
+                        os.system('systemctl suspend')
+                elif percentage < 10:
                         return 'battery_empty'
                 elif percentage < 20:
                         return 'battery_caution'
