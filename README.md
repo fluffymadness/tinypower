@@ -21,9 +21,9 @@ ACPI Handling:
 
 The following events can have custom actions:
 
-Power Button Press
-Lid Close
-Suspend Button
+- Power Button Press
+- Lid Close
+- Suspend Button
 
 You can assing a systemd action to the different events,
 like PowerOff, Suspend, Hibernate, Nothing
