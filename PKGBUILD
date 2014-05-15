@@ -3,9 +3,9 @@
 
 pkgname=tinypower-git
 _gitname=tinypower
-pkgver=0.1
-pkgrel=1.0
-pkgdesc="A tidybattery fork with acpi handling"
+pkgver=2c55cf6
+pkgrel=1
+pkgdesc="A tidybattery fork with acpi handling(custom commands) + dpms control + notifications (InstallationDocumentation on Git)"
 arch=('i686' 'x86_64')
 url="https://github.com/fluffymadness/tinypower"
 license=('GPLv2')
